@@ -25,13 +25,11 @@ if (!OPENAI_API_KEY) {
 }
 
 if (!RESEND_API_KEY) {
-    console.error('Missing Resend API key. Please set RESEND_API_KEY in the .env file.');
-    process.exit(1);
+    console.warn('⚠️  Missing Resend API key. Email summaries will be logged to console only.');
 }
 
 if (!ORDERS_EMAIL_TO) {
-    console.error('Missing email recipient. Please set ORDERS_EMAIL_TO in the .env file.');
-    process.exit(1);
+    console.warn('⚠️  Missing email recipient. Email summaries will be logged to console only.');
 }
 
 // Initialize Fastify
@@ -84,7 +82,15 @@ fastify.get('/api/status', async (request, reply) => {
 
 // Route for Twilio to handle incoming calls - Rolling Feast
 fastify.all('/incoming-call', async (request, reply) => {
+    console.log('📞 Incoming call received from:', request.ip);
+    console.log('📞 Headers:', JSON.stringify(request.headers, null, 2));
+    
     try {
+        // Validate required headers
+        if (!request.headers.host) {
+            throw new Error('Missing host header');
+        }
+
         const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
                               <Response>
                                   <Connect>
@@ -92,21 +98,25 @@ fastify.all('/incoming-call', async (request, reply) => {
                                   </Connect>
                               </Response>`;
 
+        console.log('📞 Sending TwiML response');
         reply.type('text/xml').send(twimlResponse);
+        
     } catch (error) {
-        console.error('Error in /incoming-call:', error);
+        console.error('❌ Error in /incoming-call:', error);
+        
         const errorResponse = `<?xml version="1.0" encoding="UTF-8"?>
                               <Response>
                                   <Say language="hi-IN">क्षमा कीजिए, अभी तकनीकी समस्या आ रही है।</Say>
                               </Response>`;
-        reply.type('text/xml').send(errorResponse);
+        
+        reply.type('text/xml').code(200).send(errorResponse);
     }
 });
 
 // WebSocket route for media-stream
 fastify.register(async (fastify) => {
     fastify.get('/media-stream', { websocket: true }, (connection, req) => {
-        console.log('Client connected');
+        console.log('🔗 WebSocket client connected from:', req.ip);
 
         // Connection-specific state
         let streamSid = null;
