@@ -1,9 +1,11 @@
 {
-  "name": "speech-assistant-openai-realtime-api-node",
-  "version": "1.0.1",
-  "description": "",
+  "name": "rolling-feast-voice-assistant",
+  "version": "1.0.0",
+  "description": "Hindi-first Voice AI Assistant for Rolling Feast Indo-Chinese Restaurant",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,9 +14,14 @@
   "type": "module",
   "dependencies": {
     "@fastify/formbody": "^8.0.0",
+    "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.0.0",
     "dotenv": "^16.4.5",
+    "express": "^4.18.2",
     "fastify": "^5.0.0",
+    "openai": "^4.20.0",
+    "resend": "^2.1.0",
+    "twilio": "^4.19.0",
     "ws": "^8.18.0"
   }
 }

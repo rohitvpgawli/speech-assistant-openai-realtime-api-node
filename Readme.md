@@ -1,89 +1,159 @@
-#  Speech Assistant with Twilio Voice and the OpenAI Realtime API (Node.js)
+# 🍜 Rolling Feast Voice AI Assistant
 
-This application demonstrates how to use Node.js, [Twilio Voice](https://www.twilio.com/docs/voice) and [Media Streams](https://www.twilio.com/docs/voice/media-streams), and [OpenAI's Realtime API](https://platform.openai.com/docs/) to make a phone call to speak with an AI Assistant. 
+**Hindi-first Voice AI Assistant for Rolling Feast Indo-Chinese Restaurant**
 
-The application opens websockets with the OpenAI Realtime API and Twilio, and sends voice audio from one to the other to enable a two-way conversation.
+This application provides a natural, conversational phone assistant that:
+- **Greets callers in Hindi** with a warm female voice
+- **Switches languages naturally** between Hindi, English, and Hinglish
+- **Records conversation transcripts** for every call
+- **Sends email summaries** after each call using Resend
+- **Handles orders and table bookings** with human-like responses
 
-See [here](https://www.twilio.com/en-us/blog/voice-ai-assistant-openai-realtime-api-node) for a tutorial overview of the code.
+Built with Node.js, Twilio Voice, OpenAI Realtime API, and Resend for email delivery.
 
-This application uses the following Twilio products in conjuction with OpenAI's Realtime API:
-- Voice (and TwiML, Media Streams)
-- Phone Numbers
+## 🎯 Features
 
-> [!NOTE]
-> Outbound calling is beyond the scope of this app. However, we demoed [one way to do it here](https://www.twilio.com/en-us/blog/outbound-calls-node-openai-realtime-api-voice).
+### Hindi-First Conversation
+- **Initial Greeting**: "नमस्ते! Rolling Feast में आपका स्वागत है। क्या आप ऑर्डर देना चाहेंगे या टेबल बुक करना?"
+- **Female Voice**: Warm, conversational tone using OpenAI's shimmer voice
+- **Natural Flow**: Short, human-like responses (3-8 seconds each)
 
-## Prerequisites
+### Smart Language Switching
+- **Hindi Default**: Always starts in Hindi
+- **English Support**: Switches to English if caller uses English
+- **Hinglish Handling**: Natural code-mixing support
+- **Context Aware**: Maintains language preference throughout call
 
-To use the app, you will  need:
+### Call Management
+- **Real-time Transcription**: Records all caller + assistant interactions
+- **Smart Summarization**: 2-4 sentence summary in conversation language
+- **Email Delivery**: Automatic summary via Resend after call ends
+- **Error Handling**: Hindi fallback messages for technical issues
 
-- **Node.js 18+** We used \`18.20.4\` for development; download from [here](https://nodejs.org/).
-- **A Twilio account.** You can sign up for a free trial [here](https://www.twilio.com/try-twilio).
-- **A Twilio number with _Voice_ capabilities.** [Here are instructions](https://help.twilio.com/articles/223135247-How-to-Search-for-and-Buy-a-Twilio-Phone-Number-from-Console) to purchase a phone number.
-- **An OpenAI account and an OpenAI API Key.** You can sign up [here](https://platform.openai.com/).
-  - **OpenAI Realtime API access.**
+## 📋 Prerequisites
 
-## Local Setup
+### Required Accounts & API Keys
+- **OpenAI API Key** - [Get here](https://platform.openai.com/) (Realtime API access required)
+- **Twilio Account** - [Sign up here](https://www.twilio.com/try-twilio)
+- **Twilio Phone Number** - With Voice capabilities
+- **Resend API Key** - [Get here](https://resend.com/) for email summaries
+- **Node.js 18+** - [Download here](https://nodejs.org/)
 
-There are 4 required steps to get the app up-and-running locally for development and testing:
-1. Run ngrok or another tunneling solution to expose your local server to the internet for testing. Download ngrok [here](https://ngrok.com/).
-2. Install the packages
-3. Twilio setup
-4. Update the .env file
+## 🚀 Quick Setup
 
-### Open an ngrok tunnel
-When developing & testing locally, you'll need to open a tunnel to forward requests to your local development server. These instructions use ngrok.
-
-Open a Terminal and run:
-```
-ngrok http 5050
-```
-Once the tunnel has been opened, copy the `Forwarding` URL. It will look something like: `https://[your-ngrok-subdomain].ngrok.app`. You will
-need this when configuring your Twilio number setup.
-
-Note that the `ngrok` command above forwards to a development server running on port `5050`, which is the default port configured in this application. If
-you override the `PORT` defined in `index.js`, you will need to update the `ngrok` command accordingly.
-
-Keep in mind that each time you run the `ngrok http` command, a new URL will be created, and you'll need to update it everywhere it is referenced below.
-
-### Install required packages
-
-Open a Terminal and run:
-```
+### 1. Install Dependencies
+```bash
 npm install
 ```
 
-### Twilio setup
-
-#### Point a Phone Number to your ngrok URL
-In the [Twilio Console](https://console.twilio.com/), go to **Phone Numbers** > **Manage** > **Active Numbers** and click on the additional phone number you purchased for this app in the **Prerequisites**.
-
-In your Phone Number configuration settings, update the first **A call comes in** dropdown to **Webhook**, and paste your ngrok forwarding URL (referenced above), followed by `/incoming-call`. For example, `https://[your-ngrok-subdomain].ngrok.app/incoming-call`. Then, click **Save configuration**.
-
-### Update the .env file
-
-Create a `/env` file, or copy the `.env.example` file to `.env`:
-
-```
-cp .env.example .env
+### 2. Environment Configuration
+Create your environment file:
+```bash
+touch .env
 ```
 
-In the .env file, update the `OPENAI_API_KEY` to your OpenAI API key from the **Prerequisites**.
-
-## Run the app
-Once ngrok is running, dependencies are installed, Twilio is configured properly, and the `.env` is set up, run the dev server with the following command:
+Add your API keys to `.env`:
+```env
+OPENAI_API_KEY=sk-proj-your-openai-api-key-here
+TWILIO_ACCOUNT_SID=ACyour-twilio-account-sid-here
+TWILIO_AUTH_TOKEN=your-twilio-auth-token-here
+TWILIO_VOICE_NUMBER=+17867861482
+RESEND_API_KEY=re_your-resend-api-key-here
+ORDERS_EMAIL_TO=orders@rollingfeast.com
+PORT=5050
 ```
-node index.js
+
+### 3. Start the Server
+```bash
+npm start
 ```
-## Test the app
-With the development server running, call the phone number you purchased in the **Prerequisites**. After the introduction, you should be able to talk to the AI Assistant. Have fun!
 
-## Special features
+### 4. Expose Local Server (Development)
+Open a new terminal and run:
+```bash
+ngrok http 5050
+```
+Copy the forwarding URL (e.g., `https://abc123.ngrok.app`)
 
-### Have the AI speak first
-To have the AI voice assistant talk before the user, uncomment the line `// sendInitialConversationItem();`. The initial greeting is controlled in `sendInitialConversationItem`.
+### 5. Configure Twilio Webhook
+1. Go to [Twilio Console](https://console.twilio.com/)
+2. Navigate to **Phone Numbers** > **Manage** > **Active Numbers**
+3. Click on your phone number
+4. Set **A call comes in** to **Webhook**
+5. Enter: `https://your-ngrok-url.ngrok.app/incoming-call`
+6. Click **Save configuration**
 
-### Interrupt handling/AI preemption
-When the user speaks and OpenAI sends `input_audio_buffer.speech_started`, the code will clear the Twilio Media Streams buffer and send OpenAI `conversation.item.truncate`.
+## 🧪 Testing the Assistant
 
-Depending on your application's needs, you may want to use the [`input_audio_buffer.speech_stopped`](https://platform.openai.com/docs/api-reference/realtime-server-events/input_audio_buffer/speech_stopped) event, instead.
+### Acceptance Test Checklist
+1. **Call Setup**: Dial your Twilio number
+2. **Hindi Greeting**: Hear female Hindi greeting within ~3 seconds
+3. **Hindi Conversation**: Talk in Hindi → AI responds naturally in Hindi
+4. **Language Switch**: Switch to English → AI continues smoothly in English
+5. **Hinglish Support**: Mix languages → AI handles code-mixing naturally
+6. **Call Summary**: Hang up → Receive email summary in conversation language
+
+### Expected Behavior
+- **Response Time**: < 3 seconds for initial greeting
+- **Voice Quality**: Clear female voice, warm tone
+- **Language Detection**: Automatic Hindi/English/Hinglish switching
+- **Email Delivery**: Summary arrives within 30 seconds
+
+## 📁 Project Structure
+
+```
+rolling-feast-voice/
+├── index.js              # Main Express server & Twilio webhook handler
+├── lib/
+│   ├── ai.js            # OpenAI Realtime session (Hindi-first config)
+│   ├── email.js         # Resend email integration
+│   └── summarize.js     # Transcript summarization & language detection
+├── .env                 # Environment variables (create this file)
+├── package.json         # Dependencies & scripts
+└── README.md           # This file
+```
+
+## 🔧 Technical Details
+
+### System Prompt
+The AI uses a bilingual system prompt that:
+- Starts conversations in Hindi
+- Switches to English/Hinglish naturally
+- Maintains warm, conversational tone
+- Keeps responses short and human-like
+
+### Error Handling
+If any error occurs, the system returns:
+```xml
+<Response>
+  <Say language="hi-IN">क्षमा कीजिए, अभी तकनीकी समस्या आ रही है।</Say>
+</Response>
+```
+
+### Dependencies
+- `express` - Web server framework
+- `openai` - Realtime API client
+- `twilio` - TwiML responses
+- `resend` - Email delivery service
+- `ws` - WebSocket connections
+
+## 🚨 Troubleshooting
+
+- **ngrok URL changes**: Update Twilio webhook configuration
+- **OpenAI API limits**: Check usage and billing
+- **Hindi font issues**: Ensure proper UTF-8 encoding
+- **Email not received**: Verify Resend API key and recipient email
+- **No greeting**: Check OpenAI Realtime API access
+
+## 📞 Production Deployment
+
+For production use:
+1. Deploy to a cloud service (Heroku, Railway, etc.)
+2. Use environment variables for all secrets
+3. Set up proper logging and monitoring
+4. Configure rate limiting
+5. Update Twilio webhook to production URL
+
+---
+
+**Rolling Feast Voice Assistant** - Bringing the warmth of Hindi hospitality to every call! 🍜📞

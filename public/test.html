@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Audio Test - AI Speech Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 2rem;
+        }
+
+        .control-panel {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            min-width: 150px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn.recording {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            animation: pulse 1.5s infinite;
+        }
+
+        .btn.connected {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .status-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: #667eea;
+            margin: 0 1px;
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        .conversation-log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .message.assistant {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .message.system {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            font-style: italic;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #856404;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        
+        <div class="header">
+            <h1>🎤 Web Audio Test</h1>
+            <p>Test the AI assistant directly in your browser</p>
+        </div>
+
+        <div class="card">
+            <div class="warning">
+                <strong>Note:</strong> This is a web-based audio test interface. For the full phone experience, use your configured Twilio number.
+                The web interface connects directly to the OpenAI Realtime API for testing purposes.
+            </div>
+
+            <div class="control-panel">
+                <button id="connectBtn" class="btn">Connect to AI</button>
+                <button id="recordBtn" class="btn" disabled>Start Recording</button>
+                <button id="disconnectBtn" class="btn" disabled>Disconnect</button>
+            </div>
+
+            <div class="status-display">
+                <strong>Status:</strong> <span id="connectionStatus">Disconnected</span>
+            </div>
+
+            <div class="audio-visualizer" id="visualizer">
+                <div class="visualizer-placeholder">Audio visualizer will appear here when recording</div>
+            </div>
+
+            <div class="conversation-log" id="conversationLog">
+                <div class="message system">
+                    Welcome! Click "Connect to AI" to start testing the speech assistant.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>How to Test</h3>
+            <ol>
+                <li><strong>Connect:</strong> Click "Connect to AI" to establish a WebSocket connection</li>
+                <li><strong>Allow Microphone:</strong> Grant microphone permissions when prompted</li>
+                <li><strong>Start Recording:</strong> Click "Start Recording" and speak to the AI</li>
+                <li><strong>Listen:</strong> The AI will respond with voice audio</li>
+                <li><strong>Continue:</strong> Have a natural conversation with interruption support</li>
+            </ol>
+            
+            <div class="warning">
+                <strong>Requirements:</strong>
+                <ul>
+                    <li>OpenAI API key must be configured in your .env file</li>
+                    <li>Modern browser with WebRTC support</li>
+                    <li>Microphone permissions</li>
+                    <li>Stable internet connection</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WebAudioTest {
+            constructor() {
+                this.ws = null;
+                this.mediaRecorder = null;
+                this.audioContext = null;
+                this.isRecording = false;
+                this.isConnected = false;
+                
+                this.connectBtn = document.getElementById('connectBtn');
+                this.recordBtn = document.getElementById('recordBtn');
+                this.disconnectBtn = document.getElementById('disconnectBtn');
+                this.statusElement = document.getElementById('connectionStatus');
+                this.logElement = document.getElementById('conversationLog');
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.recordBtn.addEventListener('click', () => this.toggleRecording());
+                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+            }
+            
+            async connect() {
+                try {
+                    this.updateStatus('Connecting...');
+                    this.addMessage('system', 'Connecting to OpenAI Realtime API...');
+                    
+                    // Check if OpenAI is configured
+                    const statusResponse = await fetch('/api/status');
+                    const statusData = await statusResponse.json();
+                    
+                    if (!statusData.openai_configured) {
+                        throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.');
+                    }
+                    
+                    // For now, show a placeholder since direct web connection to OpenAI Realtime API
+                    // requires additional server-side WebSocket proxy implementation
+                    this.updateStatus('Connected (Simulation Mode)');
+                    this.addMessage('system', 'Connected to AI assistant simulation. In a full implementation, this would connect via a WebSocket proxy to OpenAI Realtime API.');
+                    
+                    this.isConnected = true;
+                    this.connectBtn.disabled = true;
+                    this.recordBtn.disabled = false;
+                    this.disconnectBtn.disabled = false;
+                    this.connectBtn.classList.add('connected');
+                    
+                    // Setup audio context for visualization
+                    await this.setupAudio();
+                    
+                } catch (error) {
+                    this.addMessage('system', `Connection failed: ${error.message}`, 'error');
+                    this.updateStatus('Connection Failed');
+                }
+            }
+            
+            async setupAudio() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Setup audio visualization
+                    const analyser = this.audioContext.createAnalyser();
+                    const source = this.audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    
+                    this.setupVisualizer(analyser);
+                    
+                    this.addMessage('system', 'Microphone access granted. Ready to record!');
+                    
+                } catch (error) {
+                    this.addMessage('system', `Microphone access failed: ${error.message}`, 'error');
+                }
+            }
+            
+            setupVisualizer(analyser) {
+                const visualizer = document.getElementById('visualizer');
+                visualizer.innerHTML = '';
+                
+                // Create visualizer bars
+                const barCount = 50;
+                const bars = [];
+                
+                for (let i = 0; i < barCount; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '2px';
+                    visualizer.appendChild(bar);
+                    bars.push(bar);
+                }
+                
+                // Animation loop for visualizer
+                const dataArray = new Uint8Array(analyser.frequencyBinSize);
+                
+                const animate = () => {
+                    if (this.isRecording) {
+                        analyser.getByteFrequencyData(dataArray);
+                        
+                        bars.forEach((bar, index) => {
+                            const value = dataArray[index * 4] || 0;
+                            const height = Math.max(2, (value / 255) * 80);
+                            bar.style.height = `${height}px`;
+                        });
+                    }
+                    
+                    if (this.isConnected) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                
+                animate();
+            }
+            
+            toggleRecording() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    this.startRecording();
+                }
+            }
+            
+            startRecording() {
+                this.isRecording = true;
+                this.recordBtn.textContent = 'Stop Recording';
+                this.recordBtn.classList.add('recording');
+                this.updateStatus('Recording...');
+                this.addMessage('user', '🎤 Recording started...');
+                
+                // Simulate AI response after a delay
+                setTimeout(() => {
+                    if (this.isRecording) {
+                        this.simulateAIResponse();
+                    }
+                }, 3000);
+            }
+            
+            stopRecording() {
+                this.isRecording = false;
+                this.recordBtn.textContent = 'Start Recording';
+                this.recordBtn.classList.remove('recording');
+                this.updateStatus('Connected');
+                this.addMessage('user', '🛑 Recording stopped');
+            }
+            
+            simulateAIResponse() {
+                const responses = [
+                    "Hello! I'm your AI assistant. How can I help you today?",
+                    "That's an interesting question! Let me think about that...",
+                    "I understand what you're asking. Here's what I think...",
+                    "Thanks for testing the speech assistant! Is there anything specific you'd like to know?",
+                    "The weather is quite nice today, isn't it? What would you like to talk about?"
+                ];
+                
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                this.addMessage('assistant', `🤖 ${randomResponse}`);
+                
+                // Simulate text-to-speech
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(randomResponse);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    speechSynthesis.speak(utterance);
+                }
+            }
+            
+            disconnect() {
+                this.isConnected = false;
+                this.isRecording = false;
+                
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+                
+                this.updateStatus('Disconnected');
+                this.addMessage('system', 'Disconnected from AI assistant');
+                
+                this.connectBtn.disabled = false;
+                this.recordBtn.disabled = true;
+                this.disconnectBtn.disabled = true;
+                this.connectBtn.classList.remove('connected');
+                this.recordBtn.classList.remove('recording');
+                this.recordBtn.textContent = 'Start Recording';
+                
+                // Clear visualizer
+                document.getElementById('visualizer').innerHTML = '<div class="visualizer-placeholder">Audio visualizer will appear here when recording</div>';
+            }
+            
+            updateStatus(status) {
+                this.statusElement.textContent = status;
+            }
+            
+            addMessage(type, content, className = '') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type} ${className}`;
+                messageDiv.innerHTML = `<strong>${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${content}`;
+                
+                this.logElement.appendChild(messageDiv);
+                this.logElement.scrollTop = this.logElement.scrollHeight;
+            }
+        }
+        
+        // Initialize the web audio test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new WebAudioTest();
+        });
+    </script>
+</body>
+</html>

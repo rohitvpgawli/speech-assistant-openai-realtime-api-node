@@ -3,15 +3,34 @@ import WebSocket from 'ws';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
+import { AI_CONFIG, createInitialGreeting } from './lib/ai.js';
+import { sendCallSummary } from './lib/email.js';
+import { summarizeTranscript } from './lib/summarize.js';
 
 // Load environment variables from .env file
 dotenv.config();
 
-// Retrieve the OpenAI API key from environment variables.
-const { OPENAI_API_KEY } = process.env;
+// Retrieve environment variables
+const { 
+    OPENAI_API_KEY, 
+    TWILIO_ACCOUNT_SID, 
+    TWILIO_AUTH_TOKEN, 
+    RESEND_API_KEY, 
+    ORDERS_EMAIL_TO 
+} = process.env;
 
 if (!OPENAI_API_KEY) {
     console.error('Missing OpenAI API key. Please set it in the .env file.');
+    process.exit(1);
+}
+
+if (!RESEND_API_KEY) {
+    console.error('Missing Resend API key. Please set RESEND_API_KEY in the .env file.');
+    process.exit(1);
+}
+
+if (!ORDERS_EMAIL_TO) {
+    console.error('Missing email recipient. Please set ORDERS_EMAIL_TO in the .env file.');
     process.exit(1);
 }
 
@@ -21,9 +40,7 @@ fastify.register(fastifyFormBody);
 fastify.register(fastifyWs);
 
 // Constants
-const SYSTEM_MESSAGE = 'You are a helpful and bubbly AI assistant who loves to chat about anything the user is interested about and is prepared to offer them facts. You have a penchant for dad jokes, owl jokes, and rickrolling – subtly. Always stay positive, but work in a joke when appropriate.';
-const VOICE = 'alloy';
-const PORT = process.env.PORT || 5050; // Allow dynamic port assignment
+const PORT = process.env.PORT || 5050;
 
 // List of Event Types to log to the console. See the OpenAI Realtime API Documentation: https://platform.openai.com/docs/api-reference/realtime
 const LOG_EVENT_TYPES = [
@@ -40,25 +57,50 @@ const LOG_EVENT_TYPES = [
 // Show AI response elapsed timing calculations
 const SHOW_TIMING_MATH = false;
 
-// Root Route
-fastify.get('/', async (request, reply) => {
-    reply.send({ message: 'Twilio Media Stream Server is running!' });
+// Serve static files
+fastify.register(import('@fastify/static'), {
+    root: new URL('./public', import.meta.url).pathname,
+    prefix: '/public/',
 });
 
-// Route for Twilio to handle incoming calls
-// <Say> punctuation to improve text-to-speech translation
-fastify.all('/incoming-call', async (request, reply) => {
-    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-                          <Response>
-                              <Say>Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API</Say>
-                              <Pause length="1"/>
-                              <Say>O.K. you can start talking!</Say>
-                              <Connect>
-                                  <Stream url="wss://${request.headers.host}/media-stream" />
-                              </Connect>
-                          </Response>`;
+// Root Route - Serve landing page
+fastify.get('/', async (request, reply) => {
+    return reply.sendFile('index.html');
+});
 
-    reply.type('text/xml').send(twimlResponse);
+// Test page route
+fastify.get('/test', async (request, reply) => {
+    return reply.sendFile('test.html');
+});
+
+// API status endpoint
+fastify.get('/api/status', async (request, reply) => {
+    reply.send({ 
+        status: 'running',
+        timestamp: new Date().toISOString(),
+        openai_configured: !!OPENAI_API_KEY
+    });
+});
+
+// Route for Twilio to handle incoming calls - Rolling Feast
+fastify.all('/incoming-call', async (request, reply) => {
+    try {
+        const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+                              <Response>
+                                  <Connect>
+                                      <Stream url="wss://${request.headers.host}/media-stream" />
+                                  </Connect>
+                              </Response>`;
+
+        reply.type('text/xml').send(twimlResponse);
+    } catch (error) {
+        console.error('Error in /incoming-call:', error);
+        const errorResponse = `<?xml version="1.0" encoding="UTF-8"?>
+                              <Response>
+                                  <Say language="hi-IN">क्षमा कीजिए, अभी तकनीकी समस्या आ रही है।</Say>
+                              </Response>`;
+        reply.type('text/xml').send(errorResponse);
+    }
 });
 
 // WebSocket route for media-stream
@@ -72,6 +114,10 @@ fastify.register(async (fastify) => {
         let lastAssistantItem = null;
         let markQueue = [];
         let responseStartTimestampTwilio = null;
+        
+        // Rolling Feast specific state
+        let transcript = [];
+        let callStartTime = new Date();
 
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
             headers: {
@@ -80,47 +126,36 @@ fastify.register(async (fastify) => {
             }
         });
 
-        // Control initial session with OpenAI
+        // Control initial session with OpenAI - Rolling Feast Configuration
         const initializeSession = () => {
             const sessionUpdate = {
                 type: 'session.update',
-                session: {
-                    turn_detection: { type: 'server_vad' },
-                    input_audio_format: 'g711_ulaw',
-                    output_audio_format: 'g711_ulaw',
-                    voice: VOICE,
-                    instructions: SYSTEM_MESSAGE,
-                    modalities: ["text", "audio"],
-                    temperature: 0.8,
-                }
+                session: AI_CONFIG
             };
 
-            console.log('Sending session update:', JSON.stringify(sessionUpdate));
+            console.log('Sending Rolling Feast session update');
             openAiWs.send(JSON.stringify(sessionUpdate));
 
-            // Uncomment the following line to have AI speak first:
-            // sendInitialConversationItem();
+            // Send Hindi greeting immediately
+            setTimeout(() => {
+                sendInitialConversationItem();
+            }, 100);
         };
 
-        // Send initial conversation item if AI talks first
+        // Send initial Hindi greeting for Rolling Feast
         const sendInitialConversationItem = () => {
-            const initialConversationItem = {
-                type: 'conversation.item.create',
-                item: {
-                    type: 'message',
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'input_text',
-                            text: 'Greet the user with "Hello there! I am an AI voice assistant powered by Twilio and the OpenAI Realtime API. You can ask me for facts, jokes, or anything you can imagine. How can I help you?"'
-                        }
-                    ]
-                }
-            };
+            const initialConversationItem = createInitialGreeting();
 
-            if (SHOW_TIMING_MATH) console.log('Sending initial conversation item:', JSON.stringify(initialConversationItem));
+            console.log('Sending Rolling Feast Hindi greeting');
             openAiWs.send(JSON.stringify(initialConversationItem));
             openAiWs.send(JSON.stringify({ type: 'response.create' }));
+            
+            // Add greeting to transcript
+            transcript.push({
+                role: 'assistant',
+                content: 'नमस्ते! Rolling Feast में आपका स्वागत है। क्या आप ऑर्डर देना चाहेंगे या टेबल बुक करना?',
+                timestamp: new Date().toISOString()
+            });
         };
 
         // Handle interruption when the caller's speech starts
@@ -201,6 +236,33 @@ fastify.register(async (fastify) => {
                     sendMark(connection, streamSid);
                 }
 
+                // Capture assistant responses for transcript
+                if (response.type === 'response.content.done' && response.content) {
+                    const assistantMessage = response.content
+                        .filter(item => item.type === 'text')
+                        .map(item => item.text)
+                        .join(' ');
+                    
+                    if (assistantMessage) {
+                        transcript.push({
+                            role: 'assistant',
+                            content: assistantMessage,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+
+                // Capture user input for transcript
+                if (response.type === 'conversation.item.input_audio_transcription.completed') {
+                    if (response.transcript) {
+                        transcript.push({
+                            role: 'user',
+                            content: response.transcript,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+
                 if (response.type === 'input_audio_buffer.speech_started') {
                     handleSpeechStartedEvent();
                 }
@@ -248,10 +310,23 @@ fastify.register(async (fastify) => {
             }
         });
 
-        // Handle connection close
-        connection.on('close', () => {
+        // Handle connection close - Send email summary
+        connection.on('close', async () => {
             if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
             console.log('Client disconnected.');
+            
+            // Generate and send email summary
+            try {
+                if (transcript.length > 1) { // More than just the greeting
+                    const summaryData = summarizeTranscript(transcript);
+                    await sendCallSummary(summaryData.summary, summaryData.language);
+                    console.log('Call summary sent via email:', summaryData.summary);
+                } else {
+                    console.log('No meaningful conversation to summarize');
+                }
+            } catch (error) {
+                console.error('Error sending call summary:', error);
+            }
         });
 
         // Handle WebSocket close and errors
@@ -270,5 +345,7 @@ fastify.listen({ port: PORT }, (err) => {
         console.error(err);
         process.exit(1);
     }
-    console.log(`Server is listening on port ${PORT}`);
+    console.log(`🍜 Rolling Feast Voice Assistant is listening on port ${PORT}`);
+    console.log(`📞 Ready to handle calls with Hindi-first greeting`);
+    console.log(`📧 Email summaries will be sent to: ${ORDERS_EMAIL_TO}`);
 });
