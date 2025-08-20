@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
-import { AI_CONFIG, createInitialGreeting } from './lib/ai.js';
+import { AI_CONFIG, createInitialGreeting, ENGLISH_GREETING } from './lib/ai.js';
 import { sendCallSummary } from './lib/email.js';
 import { summarizeTranscript } from './lib/summarize.js';
 
@@ -146,24 +146,24 @@ fastify.register(async (fastify) => {
             console.log('Sending Rolling Feast session update');
             openAiWs.send(JSON.stringify(sessionUpdate));
 
-            // Send Hindi greeting immediately
+            // Send English greeting immediately
             setTimeout(() => {
                 sendInitialConversationItem();
             }, 100);
         };
 
-        // Send initial Hindi greeting for Rolling Feast
+        // Send initial English greeting for Rolling Feast
         const sendInitialConversationItem = () => {
             const initialConversationItem = createInitialGreeting();
 
-            console.log('Sending Rolling Feast Hindi greeting');
+            console.log('Sending Rolling Feast English greeting');
             openAiWs.send(JSON.stringify(initialConversationItem));
             openAiWs.send(JSON.stringify({ type: 'response.create' }));
             
             // Add greeting to transcript
             transcript.push({
                 role: 'assistant',
-                content: 'नमस्ते! Rolling Feast में आपका स्वागत है। क्या आप ऑर्डर देना चाहेंगे या टेबल बुक करना?',
+                content: ENGLISH_GREETING,
                 timestamp: new Date().toISOString()
             });
         };
@@ -356,6 +356,6 @@ fastify.listen({ port: PORT }, (err) => {
         process.exit(1);
     }
     console.log(`🍜 Rolling Feast Voice Assistant is listening on port ${PORT}`);
-    console.log(`📞 Ready to handle calls with Hindi-first greeting`);
+    console.log(`📞 Ready to handle calls with English-first greeting (multilingual support)`);
     console.log(`📧 Email summaries will be sent to: ${ORDERS_EMAIL_TO}`);
 });
