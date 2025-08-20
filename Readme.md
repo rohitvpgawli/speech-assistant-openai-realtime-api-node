@@ -1,34 +1,33 @@
 # 🍜 Rolling Feast Voice AI Assistant
 
-**Hindi-first Voice AI Assistant for Rolling Feast Indo-Chinese Restaurant**
+**English-first, Multilingual Voice AI Assistant for Rolling Feast Restaurant**
 
-This application provides a natural, conversational phone assistant that:
-- **Greets callers in Hindi** with a warm female voice
-- **Switches languages naturally** between Hindi, English, and Hinglish
-- **Records conversation transcripts** for every call
-- **Sends email summaries** after each call using Resend
-- **Handles orders and table bookings** with human-like responses
+This application provides a fast, natural, and professional phone assistant that:
+- **Greets callers in English** with a clear, high-quality voice.
+- **Switches languages seamlessly** between English, Hindi, and Hinglish.
+- **Offers low-latency, fluid conversation** for a superior user experience.
+- **Records conversation transcripts** and **sends email summaries** after each call.
+- **Handles orders and table bookings** with human-like efficiency.
 
-Built with Node.js, Twilio Voice, OpenAI Realtime API, and Resend for email delivery.
+Built with Node.js, Fastify, Twilio Voice, OpenAI Realtime API, and Resend for email delivery.
 
 ## 🎯 Features
 
-### Hindi-First Conversation
-- **Initial Greeting**: "नमस्ते! Rolling Feast में आपका स्वागत है। क्या आप ऑर्डर देना चाहेंगे या टेबल बुक करना?"
-- **Female Voice**: Warm, conversational tone using OpenAI's shimmer voice
-- **Natural Flow**: Short, human-like responses (3-8 seconds each)
+### High-Performance Conversation
+- **Initial Greeting**: "Hello! Welcome to Rolling Feast. How can I help you today - would you like to place an order or make a reservation?"
+- **Professional Voice**: Clear, warm, and efficient tone using OpenAI's `alloy` voice.
+- **Fast & Fluid Flow**: Optimized for low latency with quick turn-taking and minimal delays.
 
 ### Smart Language Switching
-- **Hindi Default**: Always starts in Hindi
-- **English Support**: Switches to English if caller uses English
-- **Hinglish Handling**: Natural code-mixing support
-- **Context Aware**: Maintains language preference throughout call
+- **English Default**: Always starts the conversation in English.
+- **Seamless Hindi/Hinglish Support**: Automatically detects and switches to Hindi or Hinglish if the caller uses them.
+- **Context-Aware**: Maintains the caller's language preference throughout the call.
 
-### Call Management
-- **Real-time Transcription**: Records all caller + assistant interactions
-- **Smart Summarization**: 2-4 sentence summary in conversation language
-- **Email Delivery**: Automatic summary via Resend after call ends
-- **Error Handling**: Hindi fallback messages for technical issues
+### Advanced Call Management
+- **Real-time Transcription**: Records all caller and assistant interactions.
+- **Smart Summarization**: Generates a 2-4 sentence summary in the conversation's primary language.
+- **Automated Email Delivery**: Sends the summary via Resend after the call ends.
+- **Robust Error Handling**: Provides a fallback message for any technical issues.
 
 ## 📋 Prerequisites
 
@@ -68,6 +67,13 @@ PORT=5050
 npm start
 ```
 
+The server will start on port 5050 and you should see:
+```
+🍜 Rolling Feast Voice Assistant is listening on port 5050
+📞 Ready to handle calls with English-first greeting (multilingual support)
+📧 Email summaries will be sent to: your-email@example.com
+```
+
 ### 4. Expose Local Server (Development)
 Open a new terminal and run:
 ```bash
@@ -86,52 +92,47 @@ Copy the forwarding URL (e.g., `https://abc123.ngrok.app`)
 ## 🧪 Testing the Assistant
 
 ### Acceptance Test Checklist
-1. **Call Setup**: Dial your Twilio number
-2. **Hindi Greeting**: Hear female Hindi greeting within ~3 seconds
-3. **Hindi Conversation**: Talk in Hindi → AI responds naturally in Hindi
-4. **Language Switch**: Switch to English → AI continues smoothly in English
-5. **Hinglish Support**: Mix languages → AI handles code-mixing naturally
-6. **Call Summary**: Hang up → Receive email summary in conversation language
+1. **Call Setup**: Dial your Twilio number.
+2. **English Greeting**: Hear the professional English greeting within ~2-3 seconds.
+3. **English Conversation**: Talk in English → AI responds naturally and quickly in English.
+4. **Language Switch**: Switch to Hindi → AI continues smoothly in Hindi.
+5. **Hinglish Support**: Mix languages → AI handles code-mixing naturally.
+6. **Call Summary**: Hang up → Receive an email summary in the conversation's language.
 
 ### Expected Behavior
-- **Response Time**: < 3 seconds for initial greeting
-- **Voice Quality**: Clear female voice, warm tone
-- **Language Detection**: Automatic Hindi/English/Hinglish switching
-- **Email Delivery**: Summary arrives within 30 seconds
+- **Response Time**: < 3 seconds for initial greeting, with fast conversational turns.
+- **Voice Quality**: Clear, professional `alloy` voice.
+- **Language Detection**: Automatic English/Hindi/Hinglish switching.
+- **Email Delivery**: Summary arrives within 30 seconds.
 
 ## 📁 Project Structure
 
 ```
 rolling-feast-voice/
-├── index.js              # Main Express server & Twilio webhook handler
+├── index.js              # Main Fastify server & WebSocket logic
 ├── lib/
-│   ├── ai.js            # OpenAI Realtime session (Hindi-first config)
+│   ├── ai.js            # OpenAI Realtime session (English-first, multilingual config)
 │   ├── email.js         # Resend email integration
 │   └── summarize.js     # Transcript summarization & language detection
+├── public/
+│   ├── index.html       # Basic HTML page
+│   └── tech.md          # Technical documentation
 ├── .env                 # Environment variables (create this file)
 ├── package.json         # Dependencies & scripts
-└── README.md           # This file
+└── README.md            # This file
 ```
 
 ## 🔧 Technical Details
 
 ### System Prompt
-The AI uses a bilingual system prompt that:
-- Starts conversations in Hindi
-- Switches to English/Hinglish naturally
-- Maintains warm, conversational tone
-- Keeps responses short and human-like
-
-### Error Handling
-If any error occurs, the system returns:
-```xml
-<Response>
-  <Say language="hi-IN">क्षमा कीजिए, अभी तकनीकी समस्या आ रही है।</Say>
-</Response>
-```
+The AI uses a detailed system prompt that defines its persona as a professional, warm, and efficient assistant. It instructs the agent to:
+- Start conversations in English.
+- Seamlessly switch to Hindi/Hinglish based on user input.
+- Speak at a slightly faster pace for efficiency.
+- Maintain a clear, confident, and helpful tone.
 
 ### Dependencies
-- `express` - Web server framework
+- `fastify` - High-performance web server framework
 - `openai` - Realtime API client
 - `twilio` - TwiML responses
 - `resend` - Email delivery service
@@ -139,21 +140,19 @@ If any error occurs, the system returns:
 
 ## 🚨 Troubleshooting
 
-- **ngrok URL changes**: Update Twilio webhook configuration
-- **OpenAI API limits**: Check usage and billing
-- **Hindi font issues**: Ensure proper UTF-8 encoding
-- **Email not received**: Verify Resend API key and recipient email
-- **No greeting**: Check OpenAI Realtime API access
+- **ngrok URL changes**: Always update your Twilio webhook configuration after restarting ngrok.
+- **OpenAI API limits**: Check your usage and billing in the OpenAI dashboard.
+- **Email not received**: Verify your Resend API key and the recipient email address in `.env`.
+- **No greeting / Call fails**: Ensure you have granted access to the OpenAI Realtime API for your key.
 
 ## 📞 Production Deployment
 
 For production use:
-1. Deploy to a cloud service (Heroku, Railway, etc.)
-2. Use environment variables for all secrets
-3. Set up proper logging and monitoring
-4. Configure rate limiting
-5. Update Twilio webhook to production URL
+1. Deploy to a cloud service (e.g., Railway, Render, Heroku).
+2. Use environment variables for all secrets.
+3. Set up proper logging and monitoring.
+4. Update the Twilio webhook to the final production URL.
 
 ---
 
-**Rolling Feast Voice Assistant** - Bringing the warmth of Hindi hospitality to every call! 🍜📞
+**Rolling Feast Voice Assistant** - Professional, multilingual service for every call. 🍜📞

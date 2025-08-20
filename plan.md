@@ -1,135 +1,98 @@
-# Rolling Feast Voice AI Assistant
+# Rolling Feast Voice AI Assistant - Project Plan
 
 ## Project Overview
-Building a Hindi-first Voice AI Assistant for "Rolling Feast" (Indo-Chinese restaurant) that uses:
-- **Twilio Voice** for phone call handling and media streams
-- **OpenAI Realtime API** for real-time Hindi/English conversation
-- **Node.js** backend with WebSocket connections
-- **Resend** for email summaries
-- **Natural Hindi-English code-mixing support**
+Building an **English-first, multilingual Voice AI Assistant** for "Rolling Feast" restaurant that provides a fast, professional, and seamless customer experience. It uses:
+- **Twilio Voice** for phone call handling and media streams.
+- **OpenAI Realtime API** for low-latency, real-time conversation.
+- **Node.js & Fastify** for a high-performance backend.
+- **Resend** for automated email summaries.
+- **Seamless English-Hindi-Hinglish** code-mixing support.
 
 ## Architecture
 ```
-Phone Call → Twilio → WebSocket → Node.js Server → OpenAI Realtime API
-                                      ↓
-                              Web Interface (Testing)
+Phone Call → Twilio → WebSocket → Fastify Server → OpenAI Realtime API
 ```
 
-## Rolling Feast Requirements
+## Core Features & Requirements
 
-### Environment Variables (.env)
-```
-OPENAI_API_KEY=sk-proj-xxx
-TWILIO_ACCOUNT_SID=ACxxx
-TWILIO_AUTH_TOKEN=xxx
-TWILIO_VOICE_NUMBER=+17867861482
-RESEND_API_KEY=re_xxx
-ORDERS_EMAIL_TO=orders@rollingfeast.com
-PORT=5050
-```
+### High-Performance Conversation
+- **English-first Greeting**: "Hello! Welcome to Rolling Feast. How can I help you today - would you like to place an order or make a reservation?"
+- **Natural Language Switching**: English ↔ Hindi ↔ Hinglish.
+- **Professional Voice**: Clear, warm, and efficient tone (`alloy` voice model).
+- **Low Latency**: Optimized for fast, fluid conversational turns.
 
-### API Keys & Accounts Needed
-- **OpenAI API Key** - Realtime API access required
-- **Twilio Account** - Phone number: +17867861482
-- **Resend API Key** - For email summaries
-- **ngrok** - For local development webhook tunneling
-
-## Rolling Feast Features
-
-### Core Functionality
-- **Hindi-first greeting**: "नमस्ते! Rolling Feast में आपका स्वागत है। क्या आप ऑर्डर देना चाहेंगे या टेबल बुक करना?"
-- **Natural language switching**: Hindi ↔ English ↔ Hinglish
-- **Female voice**: Warm, conversational tone
-- **Transcript recording**: All caller + assistant interactions
-- **Smart summarization**: 2-4 sentences in conversation language
-- **Email delivery**: Summary sent via Resend
+### Backend & Call Management
+- **Transcript Recording**: Captures all caller and assistant interactions.
+- **Smart Summarization**: Generates a concise summary in the conversation's language.
+- **Email Delivery**: Automatically sends the summary via Resend after each call.
 
 ### File Structure
 ```
 rolling-feast-voice/
-├── index.js              # Express app, /incoming-call handler
+├── index.js              # Main Fastify server & WebSocket logic
 ├── lib/
-│   ├── ai.js            # Realtime session (Hindi-first)
-│   ├── email.js         # Resend email helper
+│   ├── ai.js            # OpenAI Realtime session (English-first, multilingual config)
+│   ├── email.js         # Resend email integration
 │   └── summarize.js     # Transcript summarization
-├── .env                # Environment variables (you create this)
+├── public/
+│   ├── index.html       # Basic HTML page
+│   └── tech.md          # Technical documentation
+├── .env                 # Environment variables
 └── README.md
 ```
 
 ## Technical Implementation
 
-### System Prompt (Hindi-first)
+### System Prompt (English-first, Multilingual)
 ```
-आप "Rolling Feast" रेस्टोरेंट की महिला-आवाज़ वाली फोन असिस्टेंट हैं।
-बातचीत की शुरुआत हमेशा हिंदी में करें।
-यदि ग्राहक अंग्रेज़ी या हिंग्लिश में बात करे, तो उसी भाषा में स्वाभाविक रूप से जवाब दें।
-हमेशा गर्मजोशी और स्वाभाविक प्रवाह रखें। जवाब छोटे और मानवीय लगें।
-ग्राहक की ज़रूरत समझने के लिए छोटे-छोटे सवाल पूछें।
+You are a professional, warm, and efficient phone assistant for "Rolling Feast" restaurant.
+
+Language Guidelines:
+- Start conversations in English by default
+- If the customer speaks in Hindi or Hinglish, seamlessly switch to that language
+- Match the customer's preferred language naturally throughout the conversation
+- Be fluent in English, Hindi, and Hinglish code-switching
+
+Communication Style:
+- Speak with confidence and clarity like a premium support agent
+- Maintain a warm, professional, and helpful tone
+- Keep responses concise and actionable
+- Speak at a natural, slightly faster pace for efficiency
 ```
 
 ### Server Configuration
+- **Framework**: Fastify
 - **Port**: 5050
-- **Voice Model**: GPT-4o Realtime Preview
-- **Voice**: Female (shimmer/nova)
+- **AI Model**: `gpt-4o-realtime-preview-2024-10-01`
+- **Voice**: `alloy` (professional, clear)
 - **Audio Format**: G.711 μ-law
-- **Languages**: Hindi (primary), English, Hinglish
+- **Languages**: English (primary), Hindi, Hinglish
 
 ### API Endpoints
-- `POST /incoming-call` - Twilio webhook entry point
-- `WS /media-stream` - WebSocket for audio streaming
-
-### Dependencies
-- `express` - Web server
-- `openai` - Realtime API client
-- `twilio` - TwiML responses
-- `resend` - Email delivery
+- `POST /incoming-call` - Twilio webhook entry point.
+- `WS /media-stream` - WebSocket for bi-directional audio streaming.
 
 ## Acceptance Testing
 
 ### Phone Call Flow
-1. **Setup**: `ngrok http 5050` → Configure Twilio webhook
-2. **Call**: Dial +17867861482
-3. **Greeting**: Hear Hindi female greeting within ~3 seconds
-4. **Hindi conversation**: Talk in Hindi → AI responds naturally in Hindi
-5. **Language switch**: Switch to English → AI continues smoothly in English
-6. **Hinglish**: Mix languages → AI handles code-mixing naturally
-7. **Call end**: Hang up → Receive email summary in conversation language
+1. **Setup**: `ngrok http 5050` → Configure Twilio webhook.
+2. **Call**: Dial the Twilio number.
+3. **Greeting**: Hear the English greeting in a clear, professional voice (<3 seconds).
+4. **English Conversation**: Converse in English; AI responds quickly and naturally.
+5. **Language Switch**: Switch to Hindi; AI continues smoothly in Hindi.
+6. **Hinglish Support**: Mix languages; AI handles code-mixing without issues.
+7. **Call End**: Hang up; receive an email summary in the correct language.
 
 ### Expected Behavior
-- **Response time**: < 3 seconds for initial greeting
-- **Language detection**: Automatic Hindi/English/Hinglish switching
-- **Voice quality**: Clear female voice, warm tone
-- **Summary**: 2-4 sentences, matches conversation language
-- **Email delivery**: Summary arrives within 30 seconds
+- **Response Time**: Fast, with minimal conversational lag.
+- **Voice Quality**: Clear, professional `alloy` voice.
+- **Language Detection**: Flawless switching between English, Hindi, and Hinglish.
+- **Email Delivery**: Summary arrives within 30 seconds of call completion.
 
-## Error Handling
-
-### Fallback Response
-If any error occurs, return TwiML:
-```xml
-<Response>
-  <Say language="hi-IN">क्षमा कीजिए, अभी तकनीकी समस्या आ रही है।</Say>
-</Response>
-```
-
-### Common Issues
-- **ngrok URL changes**: Update Twilio webhook
-- **OpenAI API limits**: Monitor usage and billing
-- **Language detection**: Ensure proper Hindi font support
-- **Email delivery**: Verify Resend API key and recipient
-
-## Setup Instructions
-
-1. **Install dependencies**: `npm install`
-2. **Configure environment**: Create `.env` file with your API keys
-3. **Start server**: `npm start`
-4. **Expose webhook**: `ngrok http 5050`
-5. **Configure Twilio**: Set webhook URL in Twilio Console
-6. **Test**: Call +17867861482
-
-## Deliverables
-- ✅ Complete source files
-- ✅ Minimal dependencies (express, openai, twilio, resend)
-- ✅ README with setup instructions
-- ✅ Hindi-first conversation flow
-- ✅ Email summary integration
+## Final Deliverables
+- ✅ **V1 (Hindi-first):** Completed.
+- ✅ **V2 (English-first, High-Performance):** Completed.
+- ✅ Complete source files for the final version.
+- ✅ Updated `README.md` with new features and setup instructions.
+- ✅ New `public/tech.md` file with technical documentation.
+- ✅ All features (multilingual support, email summaries) are fully functional.
